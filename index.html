@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบรับสมัคร โครงการอบรมเตรียมความพร้อมนิสิตสหกิจศึกษา 2568</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Apply Kanit font to the entire page */
+        body {
+            font-family: 'Kanit', sans-serif;
+        }
+        /* Simple spinner for loading state */
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 4px solid #f97316;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <div class="bg-white w-full max-w-3xl mx-auto rounded-xl shadow-2xl overflow-hidden">
+        <div class="bg-gradient-to-r from-gray-800 to-gray-700 p-6 text-white text-center">
+            <img 
+                src="https://www.nu.ac.th/wp-content/uploads/2019/02/NULOGO-Download-2019-Color-Eng.png" 
+                alt="โลโก้มหาวิทยาลัยนเรศวร"
+                class="h-20 mx-auto mb-4"
+                onerror="this.onerror=null;this.src='https://placehold.co/200x80/f97316/ffffff?text=FSS NU+';"
+            >
+            <h1 class="text-2xl md:text-3xl font-bold">โครงการอบรมเตรียมความพร้อมนิสิตสหกิจศึกษา</h1>
+            <h2 class="text-lg md:text-xl font-medium mt-1">คณะสังคมศาสตร์ มหาวิทยาลัยนเรศวร</h2>
+            <p class="text-base font-normal mt-2">ประจำปีการศึกษา 2568</p>
+        </div>
+
+        <div class="p-6 md:p-10">
+            <div id="formContainer">
+                <form id="registrationForm" class="space-y-6">
+                    <div>
+                        <h3 class="text-xl font-semibold text-gray-800 border-b-2 border-orange-500 pb-2 mb-4">ข้อมูลส่วนตัวนิสิต</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                            <div>
+                                <label for="prefix" class="block text-sm font-medium text-gray-700 mb-1">คำนำหน้าชื่อ</label>
+                                <select id="prefix" name="prefix" required class="w-full p-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition">
+                                    <option value="นาย">นาย</option>
+                                    <option value="นางสาว">นางสาว</option>
+                                </select>
+                            </div>
+                            <div></div> <div>
+                                <label for="firstName" class="block text-sm font-medium text-gray-700 mb-1">ชื่อ</label>
+                                <input type="text" id="firstName" name="firstName" placeholder="ชื่อจริง" required class="w-full p-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition">
+                            </div>
+                            <div>
+                                <label for="lastName" class="block text-sm font-medium text-gray-700 mb-1">นามสกุล</label>
+                                <input type="text" id="lastName" name="lastName" placeholder="นามสกุล" required class="w-full p-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="text-xl font-semibold text-gray-800 border-b-2 border-orange-500 pb-2 mb-4">ข้อมูลการศึกษา</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                            <div>
+                                <label for="studentId" class="block text-sm font-medium text-gray-700 mb-1">รหัสนิสิต</label>
+                                <input type="text" id="studentId" name="studentId" placeholder="เช่น 65xxxxxx" required class="w-full p-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition">
+                            </div>
+                            <div>
+                                <label for="major" class="block text-sm font-medium text-gray-700 mb-1">สาขาวิชา</label>
+                                <select id="major" name="major" required class="w-full p-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition">
+                                    <option value="สาขาวิชาจิตวิทยา">สาขาวิชาจิตวิทยา</option>
+                                    <option value="สาขาวิชารัฐศาสตร์">สาขาวิชารัฐศาสตร์</option>
+                                    <option value="สาขาวิชาพัฒนาสังคม">สาขาวิชาพัฒนาสังคม</option>
+                                    <option value="สาขาวิชาประวัติศาสตร์">สาขาวิชาประวัติศาสตร์</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="studyYear" class="block text-sm font-medium text-gray-700 mb-1">ชั้นปี</label>
+                                <select id="studyYear" name="studyYear" required class="w-full p-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition">
+                                    <option value="ชั้นปีที่ 3">ชั้นปีที่ 3</option>
+                                    <option value="ชั้นปีที่ 4">ชั้นปีที่ 4</option>
+                                    <option value="ชั้นปีอื่นๆ">ชั้นปีอื่นๆ</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-xl font-semibold text-gray-800 border-b-2 border-orange-500 pb-2 mb-4">หัวข้อการอบรมที่สนใจ</h3>
+                        <div class="grid grid-cols-1">
+                             <div>
+                                <label for="trainingTopic" class="block text-sm font-medium text-gray-700 mb-1">เลือกหัวข้อการอบรม (เลือกได้ 1 หัวข้อ)</label>
+                                <select id="trainingTopic" name="trainingTopic" required class="w-full p-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition">
+                                    <option value="(5 ก.ค. 2568) ระเบียบงานสารบรรณ และเทคนิคในการปฏิบัติงานราชการที่เกี่ยวข้อง และ หัวข้อ เขียนเรซูเม่ให้ปัง จบใหม่ยังไงก็ได้งาน">(5 ก.ค. 2568) ระเบียบงานสารบรรณ และเทคนิคในการปฏิบัติงานราชการที่เกี่ยวข้อง และ หัวข้อ เขียนเรซูเม่ให้ปัง จบใหม่ยังไงก็ได้งาน</option>
+                                 </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="text-xl font-semibold text-gray-800 border-b-2 border-orange-500 pb-2 mb-4">ข้อมูลการติดต่อ</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                            <div>
+                                <label for="email" class="block text-sm font-medium text-gray-700 mb-1">อีเมล</label>
+                                <input type="email" id="email" name="email" placeholder="example@nu.ac.th" required class="w-full p-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition">
+                            </div>
+                            <div>
+                                <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">เบอร์โทรศัพท์</label>
+                                <input type="tel" id="phone" name="phone" placeholder="0xx-xxx-xxxx" required class="w-full p-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-6">
+                        <button type="submit" id="submitButton" class="w-full flex items-center justify-center bg-orange-600 text-white font-bold text-lg p-4 rounded-lg hover:bg-orange-700 focus:outline-none focus:ring-4 focus:ring-orange-300 transition-all duration-300 transform hover:scale-105 disabled:bg-gray-400 disabled:scale-100">
+                            <span id="buttonText">ส่งใบสมัคร</span>
+                            <div id="buttonLoader" class="loader hidden"></div>
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <div id="messageContainer"></div>
+
+        </div>
+    </div>
+
+    <script>
+        const registrationForm = document.getElementById('registrationForm');
+        const formContainer = document.getElementById('formContainer');
+        const messageContainer = document.getElementById('messageContainer');
+        const submitButton = document.getElementById('submitButton');
+        const buttonText = document.getElementById('buttonText');
+        const buttonLoader = document.getElementById('buttonLoader');
+
+        // IMPORTANT: Replace this with your actual Google Apps Script Web App URL
+        const googleScriptURL = 'https://script.google.com/macros/s/AKfycbwIRHJNMOvjpxYVbps25smDFbbGZFsS_Hv1vXG4t0mXRkQOk3zm3xdUDQswepaaQn2S/exec';
+
+        registrationForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            // Check if the placeholder URL is still there
+            if (googleScriptURL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
+                showMessage('error', 'ข้อผิดพลาด: ระบบยังไม่พร้อมใช้งาน', 'กรุณาตั้งค่า Google Apps Script URL ในโค้ดก่อน');
+                return;
+            }
+
+            // Show loading state on the button
+            submitButton.disabled = true;
+            buttonText.classList.add('hidden');
+            buttonLoader.classList.remove('hidden');
+
+            const formData = new FormData(registrationForm);
+            
+            fetch(googleScriptURL, {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.result === 'success') {
+                    formContainer.classList.add('hidden'); // Hide form
+                    showMessage('success', 'สมัครเรียบร้อยแล้ว!', 'ทีมงานได้รับข้อมูลการสมัครของท่านแล้ว และจะติดต่อกลับเพื่อแจ้งรายละเอียดเพิ่มเติมทางอีเมลที่ท่านได้ลงทะเบียนไว้');
+                } else {
+                    throw new Error(data.message || 'An unknown error occurred.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showMessage('error', 'เกิดข้อผิดพลาดในการสมัคร', `กรุณาลองใหม่อีกครั้ง หรือติดต่อผู้ดูแลระบบ (${error.message})`);
+                // Restore button state after error
+                submitButton.disabled = false;
+                buttonText.classList.remove('hidden');
+                buttonLoader.classList.add('hidden');
+            });
+        });
+
+        function showMessage(type, title, text) {
+            let bgColor, borderColor, textColor, header;
+            if (type === 'success') {
+                bgColor = 'bg-green-100';
+                borderColor = 'border-green-500';
+                textColor = 'text-green-800';
+                header = `<h3 class="text-xl font-bold">${title}</h3>`;
+            } else { // error
+                bgColor = 'bg-red-100';
+                borderColor = 'border-red-500';
+                textColor = 'text-red-800';
+                header = `<h3 class="text-xl font-bold">${title}</h3>`;
+            }
+
+            messageContainer.innerHTML = `
+                <div class="mt-8 text-center ${bgColor} border-l-4 ${borderColor} ${textColor} p-6 rounded-lg">
+                    ${header}
+                    <p class="mt-2">${text}</p>
+                </div>
+            `;
+            messageContainer.scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+
+</body>
+</html>
