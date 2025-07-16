@@ -37,7 +37,8 @@
     </div>
 
     <script>
-        const googleScriptURL_CheckIn = 'https://script.google.com/macros/s/AKfycbwBtLRuF-BJ1559r6odSuYahwiBIrNAZLmv-Y22R1H7BopC61T1ON4Ncis7FHkvmtZbIQ/exec'; // URL สำหรับฟังก์ชัน Check-in
+        // *** สำคัญมาก: คุณต้องเปลี่ยน URL นี้เป็น Web App URL ที่คุณได้จากการ Deploy ฟังก์ชัน doPostCheckIn ของคุณเอง ***
+        const googleScriptURL_CheckIn = 'https://script.google.com/macros/s/AKfycbwBtLRuF-BJ1559r6odSuYahwiBIrNAZLmv-Y22R1H7BopC61T1ON4Ncis7FHkvmtZbIQ/exec'; 
 
         const qrCodeReader = document.getElementById('qr-reader');
         const qrCodeResults = document.getElementById('qr-reader-results');
@@ -53,7 +54,7 @@
             qrCodeResults.textContent = `สแกนพบ: ${decodedText}`;
 
             // หยุดสแกนชั่วคราวเมื่อสแกนสำเร็จ
-            if (html5QrCode && html5QrCode.is	Scanning) {
+            if (html5QrCode && html5QrCode.isScanning) { // แก้ไข 'is	Scanning' เป็น 'isScanning'
                 html5QrCode.stop().then(() => {
                     console.log("QR Code scanning stopped.");
                     startButton.classList.add('hidden');
@@ -61,6 +62,7 @@
                     refreshButton.classList.remove('hidden'); // แสดงปุ่มสแกนอีกครั้ง
                 }).catch((err) => {
                     console.error("Error stopping QR code scanning: " + err);
+                    // หากหยุดไม่ได้ อาจเป็นเพราะมีการเรียกซ้ำ หรือสถานะผิดปกติ
                 });
             }
 
@@ -72,7 +74,7 @@
                 const email = qrData.email;
 
                 if (!studentId && !email) {
-                    displayStatus('error', 'QR Code ไม่ถูกต้อง', 'ไม่พบข้อมูลรหัสนิสิตหรืออีเมลใน QR Code');
+                    displayStatus('error', 'QR Code ไม่ถูกต้อง', 'ไม่พบข้อมูลรหัสนิสิตหรืออีเมลใน QR Code โปรดใช้ QR Code ที่ได้จากการลงทะเบียน');
                     return;
                 }
 
@@ -80,64 +82,90 @@
                 const formData = new FormData();
                 formData.append('studentId', studentId);
                 formData.append('email', email); // ส่งอีเมลไปด้วยเพื่อความยืดหยุ่นในการค้นหา
-                formData.append('type', 'checkin'); // ระบุชนิดของการทำรายการ
+                // formData.append('type', 'checkin'); // ไม่จำเป็นต้องส่ง 'type' ไปยัง doPostCheckIn เพราะมันจัดการอยู่แล้ว
 
                 fetch(googleScriptURL_CheckIn, {
                     method: 'POST',
                     body: formData
                 })
-                .then(response => response.json())
+                .then(response => {
+                    // ตรวจสอบว่า response เป็น JSON หรือไม่
+                    const contentType = response.headers.get("content-type");
+                    if (contentType && contentType.indexOf("application/json") !== -1) {
+                        return response.json();
+                    } else {
+                        // ถ้าไม่ใช่ JSON อาจเป็น error จาก Apps Script (เช่น redirect, server error)
+                        return response.text().then(text => { throw new Error('Server response was not JSON: ' + text); });
+                    }
+                })
                 .then(data => {
                     if (data.result === 'success') {
                         displayStatus('success', 'เช็คอินสำเร็จ!', `${data.message}`);
+                    } else if (data.result === 'already_checked_in') { // เพิ่มเงื่อนไขสำหรับ 'already_checked_in'
+                        displayStatus('warning', 'เช็คอินซ้ำ!', `${data.message}`);
                     } else if (data.result === 'not_found') {
                         displayStatus('warning', 'ไม่พบข้อมูล!', `${data.message}`);
                     } else {
-                        displayStatus('error', 'เกิดข้อผิดพลาด!', `${data.message}`);
+                        displayStatus('error', 'เกิดข้อผิดพลาด!', `[${data.result || 'Unknown'}] ${data.message || 'ไม่ทราบข้อผิดพลาด'}`);
                     }
                 })
                 .catch(error => {
                     console.error('Error sending data to Apps Script:', error);
-                    displayStatus('error', 'การเชื่อมต่อล้มเหลว', 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้');
+                    displayStatus('error', 'การเชื่อมต่อล้มเหลว', 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ หรือมีข้อผิดพลาด: ' + error.message);
                 });
 
             } catch (e) {
                 console.error("Error parsing QR Code data:", e);
-                displayStatus('error', 'QR Code ไม่ถูกต้อง', 'รูปแบบข้อมูลใน QR Code ไม่สามารถอ่านได้');
+                displayStatus('error', 'QR Code ไม่ถูกต้อง', 'รูปแบบข้อมูลใน QR Code ไม่สามารถอ่านได้ กรุณาตรวจสอบ QR Code');
             }
         }
 
         function onScanFailure(error) {
             // console.warn(`Code scan error = ${error}`); // สำหรับ debugging ไม่ต้องแสดงให้ผู้ใช้เห็น
+            // สามารถเพิ่มการแสดงผล Error ที่เป็นมิตรกับผู้ใช้ได้ที่นี่ หากต้องการ
         }
 
         function displayStatus(type, title, message) {
             statusMessage.classList.remove('hidden', 'bg-green-500', 'bg-red-500', 'bg-yellow-500');
+            // ลบ class ที่เกี่ยวกับสีทั้งหมดออกก่อน เพื่อป้องกันการซ้อนทับ
+            statusMessage.classList.remove('bg-green-500', 'bg-red-500', 'bg-yellow-500'); 
+            
             if (type === 'success') {
                 statusMessage.classList.add('bg-green-500');
             } else if (type === 'error') {
                 statusMessage.classList.add('bg-red-500');
-            } else if (type === 'warning') {
+            } else if (type === 'warning' || type === 'info') { // เพิ่ม 'info' ให้ใช้สีเหลืองด้วย
                 statusMessage.classList.add('bg-yellow-500');
             }
             statusMessage.innerHTML = `<strong>${title}</strong><br>${message}`;
+            statusMessage.classList.remove('hidden'); // ให้แน่ใจว่าแสดงผล
 
-            // ซ่อนข้อความสถานะหลังจาก 5 วินาที
+            // ซ่อนข้อความสถานะหลังจาก 7 วินาที (เพิ่มเวลาให้มองเห็นนานขึ้น)
             setTimeout(() => {
                 statusMessage.classList.add('hidden');
-            }, 5000);
+            }, 7000); 
         }
 
         function startScanning() {
-            if (!html5QrCode) {
+            // ตรวจสอบว่า html5QrCode ยังไม่ได้ถูกสร้าง หรือถูกหยุดไปแล้ว
+            if (!html5QrCode) { // สร้าง instance เพียงครั้งแรก
                 html5QrCode = new Html5Qrcode("qr-reader");
+            }
+            
+            // ตรวจสอบว่าไม่ได้กำลังสแกนอยู่ก่อนเริ่มใหม่
+            if (html5QrCode.isScanning) {
+                console.log("Scanner is already running.");
+                displayStatus('info', 'กำลังสแกน', 'กล้องกำลังทำงานอยู่แล้ว');
+                return;
             }
 
             html5QrCode.start(
                 { facingMode: "environment" }, // ใช้กล้องหลัง
                 {
                     fps: 10,    // เฟรมต่อวินาที
-                    qrbox: { width: 250, height: 250 } // ขนาดกรอบสแกน
+                    qrbox: { width: 250, height: 250 }, // ขนาดกรอบสแกน
+                    // เพิ่ม output for console debugging
+                    // disableFlip: false // บางทีกล้องหน้าอาจจะกลับภาพ ลองตั้งเป็น true ถ้ามีปัญหา
                 },
                 onScanSuccess,
                 onScanFailure
@@ -149,7 +177,17 @@
                 displayStatus('info', 'พร้อมสแกน', 'เล็งกล้องไปที่ QR Code');
             }).catch((err) => {
                 console.error(`Unable to start scanning: ${err}`);
-                displayStatus('error', 'ข้อผิดพลาดกล้อง', 'ไม่สามารถเข้าถึงกล้องได้ โปรดตรวจสอบสิทธิ์');
+                let errorMessage = 'ไม่สามารถเข้าถึงกล้องได้ โปรดตรวจสอบสิทธิ์การเข้าถึงกล้องสำหรับเบราว์เซอร์ของคุณ และรีเฟรชหน้า';
+                if (err.name === 'NotAllowedError') {
+                    errorMessage = 'ไม่ได้รับอนุญาตให้เข้าถึงกล้อง! โปรดอนุญาตสิทธิ์การใช้กล้องในเบราว์เซอร์ของคุณ';
+                } else if (err.name === 'NotFoundError') {
+                    errorMessage = 'ไม่พบกล้อง! โปรดตรวจสอบว่ามีกล้องใช้งานได้บนอุปกรณ์นี้ หรือกล้องถูกใช้งานโดยแอปอื่นอยู่';
+                } else if (err.name === 'AbortError') {
+                    errorMessage = 'การเริ่มกล้องถูกยกเลิก! อาจเกิดจากข้อผิดพลาดชั่วคราว ลองใหม่อีกครั้ง';
+                } else if (err.name === 'NotReadableError') {
+                    errorMessage = 'ไม่สามารถอ่านข้อมูลจากกล้องได้! กล้องอาจถูกใช้งานอยู่ หรือมีปัญหา';
+                }
+                displayStatus('error', 'ข้อผิดพลาดกล้อง', errorMessage);
                 startButton.classList.remove('hidden'); // ยังแสดงปุ่ม Start ไว้
                 stopButton.classList.add('hidden');
                 refreshButton.classList.add('hidden');
@@ -167,15 +205,21 @@
                     displayStatus('info', 'หยุดสแกนแล้ว', 'คลิก "เริ่มสแกน" เพื่อเริ่มใหม่');
                 }).catch((err) => {
                     console.error("Error stopping QR code scanning: " + err);
+                    displayStatus('error', 'ข้อผิดพลาดในการหยุดสแกน', 'ไม่สามารถหยุดกล้องได้');
                 });
+            } else {
+                 console.log("Scanner is not running.");
+                 displayStatus('info', 'หยุดสแกนแล้ว', 'กล้องไม่ได้ทำงานอยู่');
             }
         }
 
         startButton.addEventListener('click', startScanning);
         stopButton.addEventListener('click', stopScanning);
-        refreshButton.addEventListener('click', startScanning); // ปุ่ม Refresh ก็เริ่มสแกนใหม่
+        refreshButton.addEventListener('click', startScanning); 
 
-        // เริ่มสแกนอัตโนมัติเมื่อโหลดหน้า (ถ้าต้องการ)
+        // ไม่ต้องเรียก startScanning() อัตโนมัติเมื่อโหลดหน้า
+        // ผู้ใช้ควรจะกดปุ่ม "เริ่มสแกน" เอง
+        // เพื่อให้แน่ใจว่าได้อนุญาตสิทธิ์กล้องก่อน
         // startScanning(); 
     </script>
 
