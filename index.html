@@ -174,7 +174,7 @@
             .then(data => {
                 if (data.result === 'success') {
                     formContainer.classList.add('hidden'); // Hide form
-                    showMessage('success', 'สมัครเรียบร้อยแล้ว!', 'ทีมงานได้รับข้อมูลการสมัครของท่านแล้ว และจะติดต่อกลับเพื่อแจ้งรายละเอียดเพิ่มเติมทางอีเมลที่ท่านได้ลงทะเบียนไว้');
+                    showMessage('success', 'สมัครเรียบร้อยแล้ว!', 'หน่วยสหกิจศึกษาได้รับข้อมูลการสมัครนิสิตแล้ว ขอให้นิสิตติดตามประกาศ/การประชาสัมพันธ์ต่างๆเพิ่มเติม ใน facebook group อย่างต่อเนื่องครับ ');
                 } else {
                     throw new Error(data.message || 'An unknown error occurred.');
                 }
