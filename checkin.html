@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบเช็คอินโครงการอบรมฯ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Kanit', sans-serif; }
+    </style>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+</head>
+<body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-4">
+
+    <div class="bg-white w-full max-w-lg mx-auto rounded-xl shadow-2xl overflow-hidden p-6 md:p-8">
+        <div class="text-center mb-6">
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-800">สแกน QR Code เพื่อเช็คอิน</h1>
+            <p class="text-gray-600 mt-2">โปรดนำ QR Code มาสแกนที่นี่</p>
+        </div>
+
+        <div id="qr-reader" class="w-full h-[300px] overflow-hidden rounded-lg shadow-inner mb-6"></div>
+        <div id="qr-reader-results" class="text-center text-gray-700 text-lg font-semibold mb-4"></div>
+        <div id="status-message" class="text-center p-3 rounded-lg text-white font-bold hidden"></div>
+
+        <button id="startButton" class="w-full bg-orange-600 text-white font-bold p-3 rounded-lg hover:bg-orange-700 focus:outline-none focus:ring-4 focus:ring-orange-300 transition-all duration-300 transform hover:scale-105">
+            เริ่มสแกน
+        </button>
+        <button id="stopButton" class="w-full bg-gray-500 text-white font-bold p-3 rounded-lg hover:bg-gray-600 focus:outline-none focus:ring-4 focus:ring-gray-300 transition-all duration-300 transform hover:scale-105 mt-3 hidden">
+            หยุดสแกน
+        </button>
+        <button id="refreshButton" class="w-full bg-blue-500 text-white font-bold p-3 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all duration-300 transform hover:scale-105 mt-3 hidden">
+            สแกนอีกครั้ง
+        </button>
+    </div>
+
+    <script>
+        const googleScriptURL_CheckIn = 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_CHECK_IN'; // URL สำหรับฟังก์ชัน Check-in
+
+        const qrCodeReader = document.getElementById('qr-reader');
+        const qrCodeResults = document.getElementById('qr-reader-results');
+        const statusMessage = document.getElementById('status-message');
+        const startButton = document.getElementById('startButton');
+        const stopButton = document.getElementById('stopButton');
+        const refreshButton = document.getElementById('refreshButton');
+
+        let html5QrCode; // ประกาศตัวแปรนี้ไว้นอกฟังก์ชันเพื่อให้เข้าถึงได้
+
+        function onScanSuccess(decodedText, decodedResult) {
+            console.log(`Code matched = ${decodedText}`, decodedResult);
+            qrCodeResults.textContent = `สแกนพบ: ${decodedText}`;
+
+            // หยุดสแกนชั่วคราวเมื่อสแกนสำเร็จ
+            if (html5QrCode && html5QrCode.is	Scanning) {
+                html5QrCode.stop().then(() => {
+                    console.log("QR Code scanning stopped.");
+                    startButton.classList.add('hidden');
+                    stopButton.classList.add('hidden');
+                    refreshButton.classList.remove('hidden'); // แสดงปุ่มสแกนอีกครั้ง
+                }).catch((err) => {
+                    console.error("Error stopping QR code scanning: " + err);
+                });
+            }
+
+            try {
+                const qrData = JSON.parse(decodedText); // พยายาม Parse ข้อมูล QR Code เป็น JSON
+
+                // ตรวจสอบว่ามีรหัสนิสิตหรืออีเมลอยู่ในข้อมูลหรือไม่
+                const studentId = qrData.studentId;
+                const email = qrData.email;
+
+                if (!studentId && !email) {
+                    displayStatus('error', 'QR Code ไม่ถูกต้อง', 'ไม่พบข้อมูลรหัสนิสิตหรืออีเมลใน QR Code');
+                    return;
+                }
+
+                // ส่งข้อมูลไป Apps Script เพื่ออัปเดตสถานะ
+                const formData = new FormData();
+                formData.append('studentId', studentId);
+                formData.append('email', email); // ส่งอีเมลไปด้วยเพื่อความยืดหยุ่นในการค้นหา
+                formData.append('type', 'checkin'); // ระบุชนิดของการทำรายการ
+
+                fetch(googleScriptURL_CheckIn, {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.result === 'success') {
+                        displayStatus('success', 'เช็คอินสำเร็จ!', `${data.message}`);
+                    } else if (data.result === 'not_found') {
+                        displayStatus('warning', 'ไม่พบข้อมูล!', `${data.message}`);
+                    } else {
+                        displayStatus('error', 'เกิดข้อผิดพลาด!', `${data.message}`);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error sending data to Apps Script:', error);
+                    displayStatus('error', 'การเชื่อมต่อล้มเหลว', 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้');
+                });
+
+            } catch (e) {
+                console.error("Error parsing QR Code data:", e);
+                displayStatus('error', 'QR Code ไม่ถูกต้อง', 'รูปแบบข้อมูลใน QR Code ไม่สามารถอ่านได้');
+            }
+        }
+
+        function onScanFailure(error) {
+            // console.warn(`Code scan error = ${error}`); // สำหรับ debugging ไม่ต้องแสดงให้ผู้ใช้เห็น
+        }
+
+        function displayStatus(type, title, message) {
+            statusMessage.classList.remove('hidden', 'bg-green-500', 'bg-red-500', 'bg-yellow-500');
+            if (type === 'success') {
+                statusMessage.classList.add('bg-green-500');
+            } else if (type === 'error') {
+                statusMessage.classList.add('bg-red-500');
+            } else if (type === 'warning') {
+                statusMessage.classList.add('bg-yellow-500');
+            }
+            statusMessage.innerHTML = `<strong>${title}</strong><br>${message}`;
+
+            // ซ่อนข้อความสถานะหลังจาก 5 วินาที
+            setTimeout(() => {
+                statusMessage.classList.add('hidden');
+            }, 5000);
+        }
+
+        function startScanning() {
+            if (!html5QrCode) {
+                html5QrCode = new Html5Qrcode("qr-reader");
+            }
+
+            html5QrCode.start(
+                { facingMode: "environment" }, // ใช้กล้องหลัง
+                {
+                    fps: 10,    // เฟรมต่อวินาที
+                    qrbox: { width: 250, height: 250 } // ขนาดกรอบสแกน
+                },
+                onScanSuccess,
+                onScanFailure
+            ).then(() => {
+                startButton.classList.add('hidden');
+                stopButton.classList.remove('hidden');
+                refreshButton.classList.add('hidden');
+                qrCodeResults.textContent = 'กำลังสแกน...';
+                displayStatus('info', 'พร้อมสแกน', 'เล็งกล้องไปที่ QR Code');
+            }).catch((err) => {
+                console.error(`Unable to start scanning: ${err}`);
+                displayStatus('error', 'ข้อผิดพลาดกล้อง', 'ไม่สามารถเข้าถึงกล้องได้ โปรดตรวจสอบสิทธิ์');
+                startButton.classList.remove('hidden'); // ยังแสดงปุ่ม Start ไว้
+                stopButton.classList.add('hidden');
+                refreshButton.classList.add('hidden');
+            });
+        }
+
+        function stopScanning() {
+            if (html5QrCode && html5QrCode.isScanning) {
+                html5QrCode.stop().then(() => {
+                    console.log("QR Code scanning stopped.");
+                    stopButton.classList.add('hidden');
+                    startButton.classList.remove('hidden');
+                    refreshButton.classList.add('hidden');
+                    qrCodeResults.textContent = '';
+                    displayStatus('info', 'หยุดสแกนแล้ว', 'คลิก "เริ่มสแกน" เพื่อเริ่มใหม่');
+                }).catch((err) => {
+                    console.error("Error stopping QR code scanning: " + err);
+                });
+            }
+        }
+
+        startButton.addEventListener('click', startScanning);
+        stopButton.addEventListener('click', stopScanning);
+        refreshButton.addEventListener('click', startScanning); // ปุ่ม Refresh ก็เริ่มสแกนใหม่
+
+        // เริ่มสแกนอัตโนมัติเมื่อโหลดหน้า (ถ้าต้องการ)
+        // startScanning(); 
+    </script>
+
+</body>
+</html>
